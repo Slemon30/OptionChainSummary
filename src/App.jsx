@@ -39,6 +39,7 @@ function App() {
             <th>Strike Price</th>
             <th>Put Price</th>
             <th>Put OI</th>
+            <th>Call + Put OI</th>
           </tr>
         </thead>
         <tbody>
@@ -49,6 +50,7 @@ function App() {
               <td>{item[2]}</td>
               <td>{item[3]}</td>
               <td>{item[4]}</td>
+              <td>{item[5]}</td>
             </tr>
           ))}
         </tbody>
