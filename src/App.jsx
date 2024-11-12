@@ -8,7 +8,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/get_option_data');
+        const response = await axios.get('https://optionchainsummarybackend.onrender.com/get_option_data');
         setOptionData(response.data.option_chain);
         setSummary(response.data.summary);
       } catch (error) {
