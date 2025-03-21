@@ -8,7 +8,7 @@ function App() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get('http://127.0.0.1:5000/get_option_data');
+        const response = await axios.get('https://optionchainsummarybackend.onrender.com/get_option_data');
         setOptionData(response.data.option_chain);
         setSummary(response.data.summary);
       } catch (error) {
@@ -29,6 +29,8 @@ function App() {
         <li>Max Call OI Strike Price: {summary.maxCallOI_StrikePrice}</li>
         <li>Max Put OI Strike Price: {summary.maxPutOI_StrikePrice}</li>
         <li>Max OI Strike Price: {summary.maxOI_StrikePrice}</li>
+        <li>Second Max OI Strike Price: {summary.maxOI_StrikePrice2}</li>
+        <li>Third Max OI Strike Price: {summary.maxOI_StrikePrice3}</li>
       </ul>
       <h2>Option Data</h2>
       <table border="1">
@@ -39,6 +41,8 @@ function App() {
             <th>Strike Price</th>
             <th>Put Price</th>
             <th>Put OI</th>
+            <th>Call + Put OI</th>
+            <th>Call - Put OI</th>
           </tr>
         </thead>
         <tbody>
@@ -49,6 +53,8 @@ function App() {
               <td>{item[2]}</td>
               <td>{item[3]}</td>
               <td>{item[4]}</td>
+              <td>{item[5]}</td>
+              <td>{item[6]}</td>
             </tr>
           ))}
         </tbody>

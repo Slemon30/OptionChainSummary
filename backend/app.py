@@ -21,7 +21,7 @@ def fetch_option_data():
     soup = BeautifulSoup(response.text, 'html.parser')
 
     # Find all tables with the specified classes
-    tables = soup.find_all('table', class_='tb10Table optc56Table')
+    tables = soup.find_all('table', class_='tb10Table borderPrimary optc56Table')
 
     if tables:
     # Select the first table in the list
@@ -46,7 +46,7 @@ def fetch_option_data():
             
                 for td in CallcellsOI:
                     callcelldiv_OI = td.find('div', class_='opr84CellVal')
-                    callOI = float(callcelldiv_OI.text.replace(",", "").strip())  # Get the text from the div
+                    callOI = callcelldiv_OI.text.replace(",", "").strip()  # Get the text from the div
                     if callOI == '--':
                         callOI = 0
                     else:
@@ -55,7 +55,11 @@ def fetch_option_data():
                 #print("Call OI: ", callOI)  # Print the Call OI value
                 for td in CallcellsPrice:
                     callcelldiv_Price = td.find('div', class_='opr84CellVal')
-                    callPrice = float(callcelldiv_Price.text.replace(",", "").replace("₹", "").strip())  # Get the text from the div
+                    callPrice = callcelldiv_Price.text.replace(",", "").replace("₹", "").strip()  # Get the text from the div
+                    if callPrice == '--':
+                        callPrice = 0
+                    else:
+                        callPrice = float(callPrice)
                 #print("Call Price: ", callPrice)  # Print the Call OI value
 
                 for td in StrikePrice:
@@ -73,10 +77,15 @@ def fetch_option_data():
 
                 for td in PutcellsPrice:
                     putcelldiv_Price = td.find('div', class_='opr84CellVal')
-                    putPrice = float(putcelldiv_Price.text.replace(",", "").replace("₹", "").strip())  # Get the text from the div
+                    putPrice = putcelldiv_Price.text.replace(",", "").replace("₹", "").strip()  # Get the text from the div
+                    if putPrice == '--':
+                        putPrice = 0
+                    else:
+                        putPrice = float(putPrice)
                 #print("Put Price: ", putPrice)  # Print the Call OI value
-
-                data1 = [callOI, callPrice, strikePrice, putPrice, putOI]
+                callplusputOI = callOI + putOI
+                callminusputOI = callOI - putOI
+                data1 = [callOI, callPrice, strikePrice, putPrice, putOI, callplusputOI, callminusputOI]
                 optiondata_list.append(data1)
                         
         else:
@@ -89,16 +98,42 @@ def fetch_option_data():
 @app.route('/get_option_data', methods=['GET'])
 def get_option_data():
     optiondata_list = fetch_option_data()
-    optionchain = pd.DataFrame(optiondata_list, columns=['Call OI', 'Call Price', 'Strike Price', 'Put Price', 'Put OI'])
+    optionchain = pd.DataFrame(optiondata_list, columns=['Call OI', 'Call Price', 'Strike Price', 'Put Price', 'Put OI', 'Call+Put', 'Call-Put'])
     
     totalCallOI = optionchain['Call OI'].sum()
     totalPutOI = optionchain['Put OI'].sum()
     put_to_call_ratio = totalPutOI / totalCallOI if totalCallOI else 0
+    maxCallOI_StrikePrice = None
+    maxPutOI_StrikePrice = None
+    maxOI_StrikePrice = None
 
-    maxCallOI_StrikePrice = optionchain.loc[optionchain['Call OI'].idxmax()]['Strike Price'] if not optionchain['Call OI'].empty else None
-    maxPutOI_StrikePrice = optionchain.loc[optionchain['Put OI'].idxmax()]['Strike Price'] if not optionchain['Put OI'].empty else None
-    maxOI_StrikePrice = optionchain.loc[optionchain['Call OI'] + optionchain['Put OI'] == (optionchain['Call OI'] + optionchain['Put OI']).max()]['Strike Price'].values[0]
+    if not optionchain.empty:
+        maxCallOI_StrikePrice = optionchain.loc[optionchain['Call OI'].idxmax(), 'Strike Price']
+        maxPutOI_StrikePrice = optionchain.loc[optionchain['Put OI'].idxmax(), 'Strike Price']
+        maxOI_StrikePrice = optionchain.loc[(optionchain['Call+Put']).idxmax(), 'Strike Price']
+        top3_maxOI = optionchain.nlargest(3, 'Call+Put')
+        top3_maxOI_StrikePrices = top3_maxOI['Strike Price'].tolist()
+        maxOI_StrikePrice2 = top3_maxOI_StrikePrices[1]
+        maxOI_StrikePrice3 = top3_maxOI_StrikePrices[2]
 
+    
+    #maxCallOI_StrikePrice = optionchain.loc[optionchain['Call OI'].idxmax()]['Strike Price'] if not optionchain['Call OI'].empty else None
+    #maxPutOI_StrikePrice = optionchain.loc[optionchain['Put OI'].idxmax()]['Strike Price'] if not optionchain['Put OI'].empty else None
+    #maxOI_StrikePrice = optionchain.loc[optionchain['Call OI'] + optionchain['Put OI'] == (optionchain['Call OI'] + optionchain['Put OI']).max()]['Strike Price'].values[0]
+    #optionchain['Call OI'] = pd.to_numeric(optionchain['Call OI'], errors='coerce').fillna(0)
+    #optionchain['Put OI'] = pd.to_numeric(optionchain['Put OI'], errors='coerce').fillna(0)
+
+   # combined_OI = optionchain['Call OI'] + optionchain['Put OI']
+    #max_combined_OI = combined_OI.max()
+    #maxOI_StrikePrice = 0
+    #filtered = optionchain.loc[combined_OI == max_combined_OI]
+    #if not filtered.empty:
+        #maxOI_StrikePrice = filtered['Strike Price'].values[0]
+        #print("Strike Price with max OI:", maxOI_StrikePrice)
+    #else:
+        #print("No Strike Price found with maximum combined OI.")
+
+    
     return jsonify({
         "option_chain": optiondata_list,
         "summary": {
@@ -107,7 +142,10 @@ def get_option_data():
             "putToCallRatio": put_to_call_ratio,
             "maxCallOI_StrikePrice": maxCallOI_StrikePrice,
             "maxPutOI_StrikePrice": maxPutOI_StrikePrice,
-            "maxOI_StrikePrice": maxOI_StrikePrice
+            "maxOI_StrikePrice": maxOI_StrikePrice,
+            "maxOI_StrikePrice2": maxOI_StrikePrice2,
+            "maxOI_StrikePrice3": maxOI_StrikePrice3
+            
         }
     })
 
