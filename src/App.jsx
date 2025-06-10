@@ -175,7 +175,7 @@ function App() {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://127.0.0.1:5000/get_option_data');
+        const response = await axios.get('https://optionchainsummarybackend.onrender.com/get_option_data');
         setOptionData(response.data.option_chain);
         setSummary(response.data.summary);
         setLastUpdated(new Date().toLocaleTimeString());
@@ -194,7 +194,7 @@ function App() {
   const refreshData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://127.0.0.1:5000/get_option_data');
+      const response = await axios.get('https://optionchainsummarybackend.onrender.com/get_option_data');
       setOptionData(response.data.option_chain);
       setSummary(response.data.summary);
       setLastUpdated(new Date().toLocaleTimeString());
